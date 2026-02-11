@@ -54,6 +54,15 @@ else
   if [ ! -f "$ASAR_FILE" ]; then
     fail "app.asar not found in Codex.app bundle."
   fi
+  # stub missing macOS-only native files so asar extract doesn't crash
+  if [ -d "$ASAR_UNPACKED" ]; then
+    find "$ASAR_UNPACKED" -name "*.node" -type l 2>/dev/null | while read -r broken; do
+      [ ! -e "$broken" ] && touch "$broken"
+    done
+  fi
+  mkdir -p "$ASAR_UNPACKED/native"
+  [ ! -f "$ASAR_UNPACKED/native/sparkle.node" ] && touch "$ASAR_UNPACKED/native/sparkle.node"
+
   info "Extracting app.asar..."
   bunx asar extract "$ASAR_FILE" "$APP_DIR"
 
