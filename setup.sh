@@ -101,15 +101,19 @@ PKGJSON
   info "Electron and native modules installed."
 fi
 
-# rebuild native modules for the local electron
-info "Rebuilding native modules for Linux..."
+# rebuild native modules against electron's node headers
 ELECTRON_PATH="$NATIVE_DIR/node_modules/electron/dist/electron"
 if [ ! -f "$ELECTRON_PATH" ]; then
   fail "Electron binary not found at $ELECTRON_PATH"
 fi
 
-ELECTRON_ABI=$(cd "$NATIVE_DIR" && node -e "console.log(require('electron/package.json').version)" 2>/dev/null || echo "$ELECTRON_VERSION")
-info "Electron ABI version: $ELECTRON_ABI"
+ELECTRON_VERSION_RESOLVED=$(cd "$NATIVE_DIR" && node -e "console.log(require('electron/package.json').version)" 2>/dev/null || echo "40.0.0")
+info "Rebuilding native modules for Electron $ELECTRON_VERSION_RESOLVED..."
+
+cd "$NATIVE_DIR"
+bunx @electron/rebuild --version "$ELECTRON_VERSION_RESOLVED" --module-dir "$NATIVE_DIR" --force
+cd "$SCRIPT_DIR"
+info "Native modules rebuilt for Electron."
 
 # copy rebuilt native modules into app
 info "Linking native modules into app..."
