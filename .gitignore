@@ -1,0 +1,18 @@
+# all generated work files (setup.sh recreates everything)
+work/
+
+# macOS installer
+*.dmg
+
+# node
+node_modules/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
+*.swp
+*.swo
