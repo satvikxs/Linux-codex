@@ -93,6 +93,23 @@ If it doesn't show immediately, restart your launcher or log out/in.
 
 Looking for Windows support? Check out [Win-Codex](https://github.com/JDhruv14/Win-Codex/) by [@JDhruv14](https://github.com/JDhruv14).
 
+## Troubleshooting
+
+### `better-sqlite3` / `NODE_MODULE_VERSION` mismatch
+
+If launch fails with an error like:
+
+- `was compiled against a different Node.js version`
+- `NODE_MODULE_VERSION 137` vs `143` (or any mismatch)
+
+clean the generated build artifacts and run setup again so native modules are rebuilt for your Electron runtime:
+
+```bash
+rm -rf work/native work/app
+./setup.sh
+./run.sh
+```
+
 ## Disclaimer
 
 This is **not** an official OpenAI project. It is an unofficial community effort to run the Codex desktop app on Linux.

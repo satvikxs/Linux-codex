@@ -15,6 +15,15 @@ info() { echo -e "${GREEN}[+]${NC} $1"; }
 warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 fail() { echo -e "${RED}[✗]${NC} $1"; exit 1; }
 
+# Remove environment variables that can force node-gyp/electron-rebuild to use
+# the wrong runtime target or break /bin/sh in child processes.
+sanitize_rebuild_env() {
+  unset npm_config_runtime npm_config_target npm_config_disturl npm_config_nodedir
+  while IFS= read -r var_name; do
+    unset "$var_name"
+  done < <(env | sed -n 's/^\(BASH_FUNC_[^=]*\)=.*/\1/p')
+}
+
 # check deps
 command -v 7z >/dev/null 2>&1 || fail "7z not found. Install p7zip-full (apt) or p7zip (pacman)."
 command -v bun >/dev/null 2>&1 || fail "bun not found. Install from https://bun.sh"
@@ -110,10 +119,24 @@ fi
 ELECTRON_VERSION_RESOLVED=$(cd "$NATIVE_DIR" && node -e "console.log(require('electron/package.json').version)" 2>/dev/null || echo "40.0.0")
 info "Rebuilding native modules for Electron $ELECTRON_VERSION_RESOLVED..."
 
-cd "$NATIVE_DIR"
-bunx @electron/rebuild --version "$ELECTRON_VERSION_RESOLVED" --module-dir "$NATIVE_DIR" --force
-cd "$SCRIPT_DIR"
+# Clear previous build artifacts to avoid stale ABI binaries being reused.
+for mod in better-sqlite3 node-pty; do
+  rm -rf "$NATIVE_DIR/node_modules/$mod/build"
+done
+
+(
+  cd "$NATIVE_DIR"
+  sanitize_rebuild_env
+  bunx @electron/rebuild --version "$ELECTRON_VERSION_RESOLVED" --module-dir "$NATIVE_DIR" --force
+)
 info "Native modules rebuilt for Electron."
+
+info "Verifying native modules against Electron ABI..."
+(
+  cd "$NATIVE_DIR"
+  ELECTRON_RUN_AS_NODE=1 "$ELECTRON_PATH" -e "require('./node_modules/better-sqlite3'); require('./node_modules/node-pty')"
+) || fail "Native module verification failed in work/native. Delete work/native/ and rerun ./setup.sh."
+info "Native modules verify in work/native."
 
 # copy rebuilt native modules into app
 info "Linking native modules into app..."
@@ -128,6 +151,13 @@ for mod in better-sqlite3 node-pty bindings; do
 done
 
 info "Native modules linked."
+
+info "Verifying linked native modules in app..."
+(
+  cd "$APP_DIR"
+  ELECTRON_RUN_AS_NODE=1 "$ELECTRON_PATH" -e "require('./node_modules/better-sqlite3'); require('./node_modules/node-pty')"
+) || fail "App native modules are ABI-incompatible. Delete work/app/ and work/native/, then rerun ./setup.sh."
+info "App native modules verify."
 
 # apply linux shim to main.js if not already patched
 MAIN_JS="$APP_DIR/.vite/build/main.js"
