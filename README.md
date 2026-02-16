@@ -31,6 +31,10 @@ chmod +x setup.sh
 # 4. Launch Codex
 chmod +x run.sh
 ./run.sh
+
+# 5. Install desktop app entry (shows in wofi/rofi and app menus)
+chmod +x install-app.sh
+./install-app.sh
 ```
 
 ## How It Works
@@ -38,6 +42,7 @@ chmod +x run.sh
 1. `setup.sh` extracts the macOS DMG using 7z, installs Electron 40 locally, and rebuilds native modules (`better-sqlite3`, `node-pty`) for Linux
 2. `run.sh` sets the required environment variables and launches the Electron app with a Linux-compatible shim
 3. The shimmed `main.js` (already inside the extracted app) patches paths so the macOS-targeted renderer runs on Linux
+4. `install-app.sh` creates a user launcher (`~/.local/bin/lin-codex`) and desktop entry (`~/.local/share/applications/lin-codex.desktop`)
 
 ## Project Structure
 
@@ -67,6 +72,22 @@ Do not redistribute the Codex DMG or OpenAI binaries.
 Issues and PRs are welcome and appreciated! If you run into problems or have improvements, please open an issue or submit a pull request.
 
 This is a community project — I'll actively review and fix issues.
+
+## Desktop App Integration (Arch/Hyprland)
+
+To make Codex appear like a normal app in your launcher:
+
+```bash
+chmod +x install-app.sh
+./install-app.sh
+```
+
+This installs:
+- `~/.local/bin/lin-codex` (launcher)
+- `~/.local/share/applications/lin-codex.desktop` (desktop entry)
+
+Then search for **Codex** in wofi/rofi.  
+If it doesn't show immediately, restart your launcher or log out/in.
 
 ## Windows Users
 
